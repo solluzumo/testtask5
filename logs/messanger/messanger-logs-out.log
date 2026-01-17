@@ -1,0 +1,2 @@
+2026/01/17 11:25:12 goose: no migrations to run. current version: 20260117072058
+{"level":"info","time":"2026-01-17T11:25:12.743Z","logger":"app","caller":"cmd/main.go:29","msg":"база данных создана ","started":"2026-01-17T11:25:12.743Z"}
