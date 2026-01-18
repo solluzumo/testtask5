@@ -3,7 +3,7 @@
 Сервис для управления чатами и сообщениями. 
 
 Реализован REST API, работа с PostgreSQL через GORM.
-
+### Стек
 Архитектура: Clean Architecture (Handler -> Service -> Repository)
 
 База данных: PostgreSQL
