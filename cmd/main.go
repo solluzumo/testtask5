@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"testtask5/internal/app"
 	"testtask5/internal/middleware"
 	"time"
@@ -43,6 +46,25 @@ func main() {
 		Addr:    ":" + os.Getenv("HTTP_PORT"),
 		Handler: router,
 	}
-	srv.ListenAndServe()
-	appLogger.Info("сервер запущен и слушает ", zap.Time("started", time.Now()))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		appLogger.Info("сервер запущен и слушает ", zap.Time("started", time.Now()))
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			appLogger.Fatal("Не удалось запустить сервер", zap.Error(err))
+		}
+	}()
+
+	// Ждём Ctrl+C
+	<-ctx.Done()
+	appLogger.Info("Завершаем работу сервера")
+
+	// Завершаем HTTP-сервер
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		appLogger.Fatal("Не удалось корректно завершить работу", zap.Error(err))
+	}
+
 }
