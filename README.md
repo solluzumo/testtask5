@@ -3,22 +3,21 @@
 Сервис для управления чатами и сообщениями. 
 
 Реализован REST API, работа с PostgreSQL через GORM.
-### Стек
-Архитектура: Clean Architecture (Handler -> Service -> Repository)
 
-База данных: PostgreSQL
+## Стек
+- Архитектура: Clean Architecture (Handler -> Service -> Repository)
 
-ORM: GORM
+- База данных: PostgreSQL
 
-Миграции: Goose
+- ORM: GORM
 
-Роутер: Chi
+- Миграции: Goose
 
-Логгер: Zap
+- Роутер: Chi
 
-Тесты: Testify, Mockery
+- Логгер: Zap
 
-Для запуска требуется только `Docker` и `docker-compose`.
+- Тесты: Testify, Mockery
 
 ### Запуск
 ```bash
