@@ -1,5 +1,8 @@
 Тестовое задание на позицию Go Developer.
-Сервис для управления чатами и сообщениями. Реализован REST API, работа с PostgreSQL через GORM, Clean Architecture.
+
+Сервис для управления чатами и сообщениями. 
+
+Реализован REST API, работа с PostgreSQL через GORM.
 
 Архитектура: Clean Architecture (Handler -> Service -> Repository)
 
