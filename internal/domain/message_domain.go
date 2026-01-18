@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type MessageDomain struct {
-	BaseDomain
+	ID        int
 	Text      string
 	ChatID    int
 	CreatedAt time.Time

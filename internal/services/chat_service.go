@@ -3,19 +3,18 @@ package services
 import (
 	"context"
 	"testtask5/internal/domain"
-	"testtask5/internal/repo/postgres"
-	"time"
+	"testtask5/internal/repo"
 
 	"go.uber.org/zap"
 )
 
 type ChatService struct {
-	chatRepo      *postgres.ChatRepoPostgres
-	messageRepo   *postgres.MessageRepoPostgres
+	chatRepo      repo.ChatRepostiory
+	messageRepo   repo.MessageRepostiory
 	serviceLogger *zap.Logger
 }
 
-func NewChatService(mRepo *postgres.MessageRepoPostgres, cRepo *postgres.ChatRepoPostgres, appLogger *zap.Logger) *ChatService {
+func NewChatService(mRepo repo.MessageRepostiory, cRepo repo.ChatRepostiory, appLogger *zap.Logger) *ChatService {
 	serviceLogger := appLogger.Named("chat_service")
 	return &ChatService{
 		chatRepo:      cRepo,
@@ -24,76 +23,90 @@ func NewChatService(mRepo *postgres.MessageRepoPostgres, cRepo *postgres.ChatRep
 	}
 }
 
-func (cs *ChatService) CreateChat(ctx context.Context, chat *domain.ChatDomain) (*domain.ChatDomain, error) {
+func (cs *ChatService) ChatExists(ctx context.Context, param repo.FilterParam) (bool, error) {
+	return cs.chatRepo.ChatExists(ctx, param)
+}
 
-	chatID, err := cs.chatRepo.CreateChat(ctx, chat.Title)
+func (cs *ChatService) CreateChat(ctx context.Context, chat *domain.ChatDomain) (*domain.ChatDomain, error) {
+	chatExists, err := cs.ChatExists(ctx, repo.FilterParam{Field: "title", Value: chat.Title})
+
+	if chatExists {
+		return nil, domain.ErrChatAlreadyExists
+	}
+
+	if err != nil {
+		return nil, domain.ErrFieldIsNotAllowed
+	}
+
+	chat, err = cs.chatRepo.CreateChat(ctx, chat)
+
 	if err != nil {
 		return nil, err
 	}
-	//Задаём дату и id
-	chat.CreatedAt = time.Now()
-	chat.ID = chatID
 
 	return chat, nil
 }
 
-func (cs *ChatService) GetChatByTitle(ctx context.Context, title string, limit int) (*domain.ChatDomain, error) {
-	chat, err := cs.chatRepo.FindChatByTitle(ctx, title)
+func (cs *ChatService) GetChatById(ctx context.Context, chatID int, limit int) (*domain.ChatDomain, error) {
+	chatDomain := &domain.ChatDomain{
+		ID: chatID,
+	}
+
+	chat, err := cs.chatRepo.FindChatById(ctx, chatDomain)
 	if err != nil {
-		cs.serviceLogger.Warn("чат с таким title не существует", zap.String("title", title))
 		return nil, domain.ErrChatNotFound
 	}
 
-	messages := cs.messageRepo.GetMessagesByChat(ctx, chat.ID, limit)
+	messages := cs.messageRepo.GetMessagesByChaWithLimit(ctx, chat.ID, limit)
 
 	chat.Messages = messages
 
 	return chat, nil
 }
 
-func (cs *ChatService) GetChatById(ctx context.Context, chatID int) (*domain.ChatDomain, error) {
-	chat, err := cs.chatRepo.FindChatByID(ctx, chatID)
-	if err != nil {
-		cs.serviceLogger.Warn("чат с таким id не существует", zap.Int("chatID", chatID))
-		return nil, domain.ErrChatNotFound
-	}
-	return chat, nil
-}
-
 func (cs *ChatService) DeleteChatByID(ctx context.Context, chatID int) error {
 
-	chat, _ := cs.GetChatById(ctx, chatID)
+	chatExists, err := cs.ChatExists(ctx, repo.FilterParam{Field: "id", Value: chatID})
 
-	if chat == nil {
-		cs.serviceLogger.Warn("чат с таким id не существует", zap.Int("chatID", chatID))
+	if err != nil {
+		return domain.ErrFieldIsNotAllowed
+	}
+
+	if !chatExists {
 		return domain.ErrChatNotFound
 	}
 
-	result := cs.chatRepo.DeleteChat(ctx, chatID)
-
-	if !result {
-		return nil
+	if err := cs.chatRepo.DeleteChat(ctx, chatID); err != nil {
+		cs.serviceLogger.Error("не удалось удалить чат", zap.Error(err))
+		return err
 	}
+
+	//УДАЛЯЕМ ВСЕ СООБЩЕНИЯ, не обязательно, так как в бд уже есть ON_DELETE
+	// if err := cs.messageRepo.DeleteMessages(ctx, chatID); err != nil {
+	// 	cs.serviceLogger.Error("не удалось удалить чат", zap.Error(err))
+	// 	return err
+	// }
+
 	return nil
 }
 
 func (cs *ChatService) SendMessage(ctx context.Context, message *domain.MessageDomain) (*domain.MessageDomain, error) {
-	chat, _ := cs.GetChatById(ctx, message.ChatID)
-	if chat == nil {
-		cs.serviceLogger.Warn("чат с таким id не существует", zap.Int("chatID", message.ChatID))
+	chatExists, err := cs.ChatExists(ctx, repo.FilterParam{Field: "id", Value: message.ChatID})
+
+	if err != nil {
+		return nil, domain.ErrFieldIsNotAllowed
+	}
+
+	if !chatExists {
 		return nil, domain.ErrChatNotFound
 	}
 
 	//создаём сообщение
-	messageID, err := cs.messageRepo.CreateMessage(ctx, message)
+	message, err = cs.messageRepo.CreateMessage(ctx, message)
 	if err != nil {
 		cs.serviceLogger.Error("не удалось создать сообщение", zap.Error(err))
 		return nil, err
 	}
-
-	//Задаём дату и id
-	message.CreatedAt = time.Now()
-	message.ID = messageID
 
 	return message, nil
 }

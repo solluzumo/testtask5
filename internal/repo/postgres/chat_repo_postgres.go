@@ -2,7 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"testtask5/internal/domain"
+	"testtask5/internal/models"
+	"testtask5/internal/repo"
+	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -21,25 +25,62 @@ func NewChatRepoPostgres(db *gorm.DB, appLogger *zap.Logger) *ChatRepoPostgres {
 	}
 }
 
-func (cr *ChatRepoPostgres) CreateChat(ctx context.Context, title string) (int, error) {
-	chat := &domain.ChatDomain{}
+func (cr *ChatRepoPostgres) CreateChat(ctx context.Context, data *domain.ChatDomain) (*domain.ChatDomain, error) {
+	chatModel := &models.Chat{
+		Title:     data.Title,
+		CreatedAt: time.Now(),
+	}
 
-	return chat, nil
+	if err := cr.db.WithContext(ctx).Create(chatModel).Error; err != nil {
+		return data, err
+	}
+
+	data.ID = chatModel.ID
+
+	return data, nil
 }
 
-func (cr *ChatRepoPostgres) FindChatByTitle(ctx context.Context, title string) (*domain.ChatDomain, error) {
-	chat := &domain.ChatDomain{}
+func (cr *ChatRepoPostgres) FindChatById(ctx context.Context, data *domain.ChatDomain) (*domain.ChatDomain, error) {
+	chatModel := &models.Chat{}
 
-	return chat, nil
+	err := cr.db.WithContext(ctx).First(&chatModel, data.ID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	data.ID = chatModel.ID
+
+	return data, nil
 }
 
-func (cr *ChatRepoPostgres) FindChatByID(ctx context.Context, chatID int) (*domain.ChatDomain, error) {
-	chat := &domain.ChatDomain{}
+func (cr *ChatRepoPostgres) ChatExists(ctx context.Context, param repo.FilterParam) (bool, error) {
+	var count int64
 
-	return chat, nil
+	chatModel := &models.Chat{}
+
+	if isFieldAllowed(param.Field) != nil {
+		return false, domain.ErrFieldIsNotAllowed
+	}
+
+	cr.db.WithContext(ctx).Model(chatModel).Where(param.Field+" = ?", param.Value).Count(&count)
+
+	return count > 0, nil
 }
 
-func (cr *ChatRepoPostgres) DeleteChat(ctx context.Context, chatID int) bool {
+func (cr *ChatRepoPostgres) DeleteChat(ctx context.Context, chatID int) error {
+	return cr.db.WithContext(ctx).Where("id = ?", chatID).Delete(&models.Chat{}).Error
+}
 
-	return true
+func isFieldAllowed(field string) error {
+	allowedFields := map[string]bool{
+		"title":      true,
+		"created_at": true,
+		"id":         true,
+	}
+
+	if !allowedFields[field] {
+		return errors.New("invalid field")
+	}
+
+	return nil
 }

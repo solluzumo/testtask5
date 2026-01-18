@@ -6,7 +6,7 @@ import (
 )
 
 type MessageRepostiory interface {
-	CreateMessage(ctx context.Context, data *domain.MessageDomain) domain.MessageDomain
-	FindMessagesByChat(ctx context.Context, chatID int, limit int) []domain.MessageDomain
-	LinkMessage(ctx context.Context, data *domain.MessageDomain) error
+	CreateMessage(ctx context.Context, data *domain.MessageDomain) (*domain.MessageDomain, error)
+	GetMessagesByChaWithLimit(ctx context.Context, chatID int, limit int) []*domain.MessageDomain
+	DeleteMessages(ctx context.Context, chatID int) error
 }

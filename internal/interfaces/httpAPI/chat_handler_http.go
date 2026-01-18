@@ -1,15 +1,16 @@
 package httpHandlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 	"testtask5/internal/domain"
 	"testtask5/internal/dto"
 	"testtask5/internal/services"
 
+	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 )
 
@@ -19,229 +20,183 @@ type ChatAPIHTTP struct {
 }
 
 func NewChatAPIHTTP(mService *services.ChatService, appLogger *zap.Logger) *ChatAPIHTTP {
-	apiLogger := appLogger.Named("chat_api_http")
 	return &ChatAPIHTTP{
 		chatService: mService,
-		apiLogger:   apiLogger,
+		apiLogger:   appLogger.Named("chat_api_http"),
 	}
 }
 
+// Создать чат
 func (ch *ChatAPIHTTP) CreateChat(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var createChatRequest dto.CreateChatRequest
-	var chatDomain domain.ChatDomain
-
-	if err := json.NewDecoder(r.Body).Decode(&createChatRequest); err != nil {
-		ch.apiLogger.Warn("не получилось расшифровать тело запроса: ",
-			zap.String("path", r.URL.Path),
-			zap.Error(err))
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	//Валидация на пустую строку
-	if createChatRequest.Title == "" {
-		ch.apiLogger.Warn("title должен быть не пустой строкой")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+	var req dto.CreateChatRequest
+	if err := ch.decodeJSON(r, &req); err != nil {
+		ch.respondError(w, "некорректный JSON", http.StatusBadRequest, err)
 		return
 	}
 
-	//Убираем лишние пробелы по краям строки
-	trimmedTitle := strings.TrimSpace(createChatRequest.Title)
-
-	//Валидация по длине строки
-	if len(trimmedTitle) > 200 {
-		ch.apiLogger.Warn("превышена максимальная длина title (200)")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+	// валидация title
+	if err := req.Validate(); err != nil {
+		ch.respondError(w, "ошибка валидации title", http.StatusBadRequest, err)
 		return
 	}
-	chatDomain.Title = trimmedTitle
-	//Создаём чат
-	result, err := ch.chatService.CreateChat(ctx, &chatDomain)
+
+	chat := &domain.ChatDomain{Title: req.Title}
+	result, err := ch.chatService.CreateChat(r.Context(), chat)
 	if err != nil {
-		ch.apiLogger.Error("не удалось создать чат: ", zap.Error(err))
-		http.Error(w, "Не удалось создать чат", http.StatusInternalServerError)
+		ch.handleDomainError(w, err)
 		return
 	}
 
-	json.NewEncoder(w).Encode(
-		&dto.CreateChatResponse{
-			ID:        result.ID,
-			Title:     result.Title,
-			CreatedAt: result.CreatedAt,
-		})
-}
-
-func (ch *ChatAPIHTTP) GetChat(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var getChatRequest dto.GetChatRequest
-
-	queryParams := r.URL.Query()
-
-	//читаем и валидируем limit (20 по умолчанию)
-	limitStr := queryParams.Get("limit")
-	limitInt := 20
-
-	if limitStr != "" {
-		parsed, err := strconv.Atoi(limitStr)
-		if err != nil {
-			http.Error(w, "неверный формат limit", http.StatusBadRequest)
-			return
-		}
-		limitInt = parsed
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&getChatRequest); err != nil {
-		ch.apiLogger.Warn("не получилось расшифровать тело запроса: ",
-			zap.String("path", r.URL.Path),
-			zap.Error(err))
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
-
-	//Валидация на пустую строку
-	if getChatRequest.Title == "" {
-		ch.apiLogger.Warn("title должен быть не пустой строкой")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-
-	//Убираем лишние пробелы по краям строки
-	trimmedTitle := strings.TrimSpace(getChatRequest.Title)
-
-	//Валидация по длине строки
-	if len(trimmedTitle) > 200 {
-		ch.apiLogger.Warn("превышена максимальная длина title (200)")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-
-	//Получаем чат и сообщения
-	result, err := ch.chatService.GetChatByTitle(ctx, trimmedTitle, limitInt)
-	if err != nil {
-		ch.apiLogger.Error("не удалось создать чат: ", zap.Error(err))
-		http.Error(w, "Не удалось создать чат", http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(
-		&dto.CreateChatResponse{
-			ID:        result.ID,
-			Title:     result.Title,
-			CreatedAt: result.CreatedAt,
-		})
-}
-
-func (ch *ChatAPIHTTP) DeleteChat(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	chatID := r.PathValue("id")
-
-	//валидация айдишника
-	if chatID == "" {
-		ch.apiLogger.Warn("chatid не должен быть пустым")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(chatID)
-	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
-		return
-	}
-
-	if id == 0 {
-		http.Error(w, "ID must be greater than 0", http.StatusBadRequest)
-		return
-	}
-	//конец валидации айдишника
-
-	//Получаем чат и сообщения
-	if err := ch.chatService.DeleteChatByID(ctx, id); err != nil {
-		ch.apiLogger.Error("не удалось создать чат: ", zap.Error(err))
-		http.Error(w, "Не удалось создать чат", http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(&dto.DeleteChatResponse{
-		Content:    "чат успешно удалён",
-		StatusCode: http.StatusNoContent,
+	ch.respondJSON(w, http.StatusCreated, &dto.CreateChatResponse{
+		ID:        result.ID,
+		Title:     result.Title,
+		CreatedAt: result.CreatedAt,
 	})
 }
 
+// Получить чат и limit сообщений
+func (ch *ChatAPIHTTP) GetChat(w http.ResponseWriter, r *http.Request) {
+	id, err := ch.parseID(r)
+	if err != nil {
+		ch.respondError(w, err.Error(), http.StatusBadRequest, nil)
+		return
+	}
+
+	limit := ch.parseLimit(r)
+
+	result, err := ch.chatService.GetChatById(r.Context(), id, limit)
+	if err != nil {
+		ch.handleDomainError(w, err)
+		return
+	}
+
+	ch.respondJSON(w, http.StatusOK, &dto.CreateChatResponse{
+		ID:        result.ID,
+		Title:     result.Title,
+		CreatedAt: result.CreatedAt,
+		Messages:  result.Messages,
+	})
+}
+
+// Удаление чата
+func (ch *ChatAPIHTTP) DeleteChat(w http.ResponseWriter, r *http.Request) {
+	id, err := ch.parseID(r)
+	if err != nil {
+		ch.respondError(w, err.Error(), http.StatusBadRequest, nil)
+		return
+	}
+
+	if err := ch.chatService.DeleteChatByID(r.Context(), id); err != nil {
+		ch.handleDomainError(w, err)
+		return
+	}
+
+	ch.respondJSON(w, http.StatusOK, &dto.DeleteChatResponse{
+		Content:    "чат успешно удалён",
+		StatusCode: http.StatusOK, // Обычно No Content (204) не возвращает тело, но оставил как у вас
+	})
+}
+
+// Отправка сообщения
 func (ch *ChatAPIHTTP) SendMessage(w http.ResponseWriter, r *http.Request) {
-	var createMessageRequest dto.CreateMessageRequest
-	var messageDomain domain.MessageDomain
-
-	ctx := r.Context()
-
-	chatID := r.PathValue("id")
-
-	if err := json.NewDecoder(r.Body).Decode(&createMessageRequest); err != nil {
-		ch.apiLogger.Warn("не получилось расшифровать тело запроса: ",
-			zap.String("path", r.URL.Path),
-			zap.Error(err))
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
+	id, err := ch.parseID(r)
+	if err != nil {
+		ch.respondError(w, err.Error(), http.StatusBadRequest, nil)
 		return
 	}
+
+	var req dto.CreateMessageRequest
+	if err := ch.decodeJSON(r, &req); err != nil {
+		ch.respondError(w, "некорректный JSON", http.StatusBadRequest, err)
+		return
+	}
+
+	// валидация text
+	if err := req.Validate(); err != nil {
+		ch.respondError(w, "ошибка валидации text", http.StatusBadRequest, err)
+		return
+	}
+
+	msgDomain := &domain.MessageDomain{
+		ChatID: id,
+		Text:   req.Text,
+	}
+
+	result, err := ch.chatService.SendMessage(r.Context(), msgDomain)
+	if err != nil {
+		ch.handleDomainError(w, err)
+		return
+	}
+
+	ch.respondJSON(w, http.StatusOK, result)
+}
+
+// parseID извлекает и валидирует ID из URL
+func (ch *ChatAPIHTTP) parseID(r *http.Request) (int, error) {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
+		return 0, errors.New("chatID отсутствует")
+	}
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id < 0 {
+		return 0, errors.New("chatID должен быть положительным числом")
+	}
+	return id, nil
+}
+
+// parseLimit парсит параметр limit или возвращает дефолтное значение
+func (ch *ChatAPIHTTP) parseLimit(r *http.Request) int {
+	defaultLimit := 20
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr == "" {
+		return defaultLimit
+	}
+	if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 {
+		return parsed
+	}
+	return defaultLimit
+}
+
+// decodeJSON декодирует тело запроса
+func (ch *ChatAPIHTTP) decodeJSON(r *http.Request, v interface{}) error {
 	defer r.Body.Close()
+	return json.NewDecoder(r.Body).Decode(v)
+}
 
-	//Валидация на пустую строку
-	if createMessageRequest.Text == "" {
-		ch.apiLogger.Warn("title должен быть не пустой строкой")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-
-	//Убираем лишние пробелы по краям строки
-	trimmedText := strings.TrimSpace(createMessageRequest.Text)
-
-	//Валидация на длину строки
-	if len(trimmedText) > 5000 {
-		ch.apiLogger.Warn("превышена максимальная длина title (200)")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-
-	//валидация айдишника
-	if chatID == "" {
-		ch.apiLogger.Warn("title должен быть не пустой строкой")
-		http.Error(w, "Неверный запрос", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.Atoi(chatID)
-	if err != nil {
-		http.Error(w, "Invalid ID format", http.StatusBadRequest)
-		return
-	}
-
-	if id == 0 {
-		http.Error(w, "ID must be greater than 0", http.StatusBadRequest)
-		return
-	}
-	//конец валидации айдишника
-
-	messageDomain.ChatID = id
-	messageDomain.Text = trimmedText
-
-	//Отправляем сообщение в чат
-	result, err := ch.chatService.SendMessage(ctx, &messageDomain)
-	if err != nil {
-		ch.apiLogger.Error("не удалось создать чат: ", zap.Error(err))
-
-		if errors.Is(err, domain.ErrChatNotFound) {
-			http.Error(w, "Чат с таким id не найден", http.StatusNotFound)
-			return
+// respondJSON отправляет стандартизированный JSON ответ
+func (ch *ChatAPIHTTP) respondJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if payload != nil {
+		if err := json.NewEncoder(w).Encode(payload); err != nil {
+			ch.apiLogger.Error("ошибка при кодировании ответа", zap.Error(err))
 		}
-
-		http.Error(w, "Не удалось создать чат", http.StatusInternalServerError)
-		return
 	}
+}
 
-	json.NewEncoder(w).Encode(result)
+// respondError отправляет ошибку в формате JSON
+func (ch *ChatAPIHTTP) respondError(w http.ResponseWriter, message string, code int, err error) {
+	if err != nil {
+		ch.apiLogger.Warn(message, zap.Error(err))
+	} else {
+		ch.apiLogger.Warn(message)
+	}
+	ch.respondJSON(w, code, map[string]string{"error": message})
+}
+
+// handleDomainError маппит ошибки домена на HTTP коды
+func (ch *ChatAPIHTTP) handleDomainError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, domain.ErrChatNotFound):
+		ch.respondError(w, "чат не найден", http.StatusNotFound, err)
+	case errors.Is(err, domain.ErrChatAlreadyExists):
+		ch.respondError(w, "чат с таким названием уже существует", http.StatusBadRequest, err)
+	case errors.Is(err, context.Canceled):
+		// Клиент ушел, отвечать некому, просто логируем
+		ch.apiLogger.Info("запрос отменён клиентом")
+	default:
+		ch.apiLogger.Error("внутренняя ошибка сервера", zap.Error(err))
+		ch.respondError(w, "internal server error", http.StatusInternalServerError, nil)
+	}
 }

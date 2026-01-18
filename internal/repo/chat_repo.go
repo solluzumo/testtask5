@@ -6,8 +6,8 @@ import (
 )
 
 type ChatRepostiory interface {
-	CreateChat(ctx context.Context, title string) (*domain.ChatDomain, error)
-	FindChatByTitle(ctx context.Context, title string) (*domain.ChatDomain, error)
-	FindChatByID(ctx context.Context, chatID int) (*domain.ChatDomain, error)
-	DeleteChat(ctx context.Context, chatID int) bool
+	CreateChat(ctx context.Context, data *domain.ChatDomain) (*domain.ChatDomain, error)
+	FindChatById(ctx context.Context, data *domain.ChatDomain) (*domain.ChatDomain, error)
+	ChatExists(ctx context.Context, param FilterParam) (bool, error)
+	DeleteChat(ctx context.Context, chatID int) error
 }

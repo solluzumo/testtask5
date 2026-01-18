@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"testtask5/internal/domain"
+	"testtask5/internal/models"
+	"time"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -21,25 +23,43 @@ func NewMessageRepoPostgres(db *gorm.DB, appLogger *zap.Logger) *MessageRepoPost
 	}
 }
 
-func (mr *MessageRepoPostgres) CreateMessage(ctx context.Context, data *domain.MessageDomain) (int, error) {
-	message := &domain.MessageDomain{}
-	// if err := r.db.WithContext(ctx).Create(model).Error; err != nil {
-	// 	return err
-	// }
+func (mr *MessageRepoPostgres) CreateMessage(ctx context.Context, data *domain.MessageDomain) (*domain.MessageDomain, error) {
+	messageModel := &models.Message{}
 
-	return message, nil
+	messageModel.ChatID = data.ChatID
+	messageModel.Text = data.Text
+	messageModel.CreatedAt = time.Now()
+
+	if err := mr.db.WithContext(ctx).Create(messageModel).Error; err != nil {
+		return data, err
+	}
+
+	data.ID = messageModel.ChatID
+
+	return data, nil
 }
 
-func (mr *MessageRepoPostgres) LinkMessage(ctx context.Context, data *domain.MessageDomain) error {
-	// if err := r.db.WithContext(ctx).Create(model).Error; err != nil {
-	// 	return err
-	// }
+func (mr *MessageRepoPostgres) GetMessagesByChaWithLimit(ctx context.Context, chatID int, limit int) []*domain.MessageDomain {
+	var messageModels []*models.Message
 
-	return nil
+	var messageDomains []*domain.MessageDomain
+
+	if err := mr.db.WithContext(ctx).Order("created_at DESC").Limit(limit).Find(&messageModels).Error; err != nil {
+		return nil
+	}
+
+	for _, el := range messageModels {
+		messageDomains = append(messageDomains, &domain.MessageDomain{
+			ID:        el.ID,
+			ChatID:    el.ChatID,
+			Text:      el.Text,
+			CreatedAt: el.CreatedAt,
+		})
+	}
+
+	return messageDomains
 }
 
-func (mr *MessageRepoPostgres) GetMessagesByChat(ctx context.Context, chatID int, limit int) []*domain.MessageDomain {
-	var messages []*domain.MessageDomain
-
-	return messages
+func (mr *MessageRepoPostgres) DeleteMessages(ctx context.Context, chatID int) error {
+	return mr.db.WithContext(ctx).Where("chat_id = ?", chatID).Delete(&models.Message{}).Error
 }

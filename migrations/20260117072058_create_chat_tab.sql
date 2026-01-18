@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 SELECT 'up SQL query';
-CREATE TABLE chat (
+CREATE TABLE chats (
     id SERIAL PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -12,5 +12,5 @@ CREATE TABLE chat (
 -- +goose Down
 -- +goose StatementBegin
 SELECT 'down SQL query';
-DROP TABLE chat;
+DROP TABLE chats;
 -- +goose StatementEnd

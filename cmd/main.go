@@ -35,6 +35,7 @@ func main() {
 	router := chi.NewRouter()
 
 	router.Use(middleware.LoggingMiddleWare(appLogger))
+	router.Use(middleware.TimeoutMiddleware(2 * time.Second))
 
 	app.RegisterRoutes(router, appInstance)
 

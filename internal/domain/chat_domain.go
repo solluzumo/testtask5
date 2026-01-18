@@ -5,7 +5,7 @@ import (
 )
 
 type ChatDomain struct {
-	BaseDomain
+	ID        int
 	Title     string
 	CreatedAt time.Time
 	Messages  []*MessageDomain
