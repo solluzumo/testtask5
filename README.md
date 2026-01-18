@@ -35,7 +35,7 @@ docker compose -f testing.docker-compose.yml up -d
 docker compose -f testing.docker-compose.yml down
 ```
 ### Тесты
-В проекте написаны Unit-тесты для слоя бизнес-логики (Service) с использованием моков.
+В проекте написаны Unit-тесты для слоя бизнес-логики с использованием моков. Тесты расположены рядом с сервисами в internal/services/chat_service_test.go
 
 Запуск тестов:
 
