@@ -22,3 +22,5 @@
 {"level":"info","time":"2026-01-18T13:38:30.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
 {"level":"info","time":"2026-01-18T13:38:35.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
 {"level":"info","time":"2026-01-18T13:38:40.636Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:45.635Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:50.635Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
