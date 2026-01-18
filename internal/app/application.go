@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -59,8 +61,12 @@ func (a *Application) startMetricsWorker() {
 	a.wg.Add(1)
 	go func() {
 		defer a.wg.Done()
-
-		ticker := time.NewTicker(5 * time.Second)
+		workersTimer, err := strconv.Atoi(os.Getenv("WORKERS_TIMER"))
+		if err != nil {
+			a.logger.Error("не удалось распарсить workers timer из окружения", zap.Error(err))
+			workersTimer = 15 // дефолтное значение
+		}
+		ticker := time.NewTicker(time.Duration(workersTimer) * time.Second)
 		defer ticker.Stop()
 
 		for {

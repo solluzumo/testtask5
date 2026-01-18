@@ -23,6 +23,7 @@ services:
     environment:
       DATABASE_URL: postgres://messanger_user:messanger_password@messanger-postgres:5432/messanger_db?sslmode=disable
       SERVICE_NAME : "messanger"
+      WORKERS_TIMER: 5
       HTTP_PORT: "8080"
     depends_on:
       messanger-postgres:
