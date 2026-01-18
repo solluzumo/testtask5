@@ -25,6 +25,12 @@ func NewChatRepoPostgres(db *gorm.DB, appLogger *zap.Logger) *ChatRepoPostgres {
 	}
 }
 
+func (cr *ChatRepoPostgres) Count(ctx context.Context) int64 {
+	var count int64
+	cr.db.WithContext(ctx).Model(&models.Chat{}).Where("1=1").Count(&count)
+	return count
+}
+
 func (cr *ChatRepoPostgres) CreateChat(ctx context.Context, data *domain.ChatDomain) (*domain.ChatDomain, error) {
 	chatModel := &models.Chat{
 		Title:     data.Title,

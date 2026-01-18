@@ -23,6 +23,12 @@ func NewMessageRepoPostgres(db *gorm.DB, appLogger *zap.Logger) *MessageRepoPost
 	}
 }
 
+func (mr *MessageRepoPostgres) Count(ctx context.Context) int64 {
+	var count int64
+	mr.db.WithContext(ctx).Model(&models.Message{}).Where("1=1").Count(&count)
+	return count
+}
+
 func (mr *MessageRepoPostgres) CreateMessage(ctx context.Context, data *domain.MessageDomain) (*domain.MessageDomain, error) {
 	messageModel := &models.Message{}
 

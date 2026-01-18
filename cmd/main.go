@@ -33,7 +33,11 @@ func main() {
 	appLogger.Info("база данных создана ", zap.Time("started", time.Now()))
 
 	//Создаём app для DI
-	appInstance := app.NewApp(db, appLogger)
+	appInstance := app.NewAppAppInstance(db, appLogger)
+
+	//Создаём application для фоновых задач
+	application := app.NewApplication(db, logger)
+	application.Start()
 
 	router := chi.NewRouter()
 
@@ -59,6 +63,9 @@ func main() {
 	// Ждём Ctrl+C
 	<-ctx.Done()
 	appLogger.Info("Завершаем работу сервера")
+
+	//Завершаем работу воркеров
+	application.Stop(10 * time.Second)
 
 	// Завершаем HTTP-сервер
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 25*time.Second)

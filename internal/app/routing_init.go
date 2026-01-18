@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi"
 )
 
-func RegisterRoutes(r chi.Router, app *App) {
+func RegisterRoutes(r chi.Router, app *AppInstance) {
 	r.Route("/chats", func(r chi.Router) {
 
 		//Хэндлеры чата

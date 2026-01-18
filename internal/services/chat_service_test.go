@@ -25,6 +25,16 @@ func (m *MockChatRepository) CreateChat(ctx context.Context, data *domain.ChatDo
 	return args.Get(0).(*domain.ChatDomain), args.Error(1)
 }
 
+func (m *MockChatRepository) Count(ctx context.Context) int64 {
+	args := m.Called(ctx)
+	return int64(args.Int(0))
+}
+
+func (m *MockMessageRepository) Count(ctx context.Context) int64 {
+	args := m.Called(ctx)
+	return int64(args.Int(0))
+}
+
 func (m *MockChatRepository) ChatExists(ctx context.Context, param repo.FilterParam) (bool, error) {
 	args := m.Called(ctx, param)
 	return args.Bool(0), args.Error(1)

@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type App struct {
+type AppInstance struct {
 	Repos    *AppRepos
 	Services *AppServices
 	API      *AppAPIs
@@ -30,7 +30,7 @@ type AppAPIs struct {
 	MessageAPI *httpHandlers.MessageAPIHTTP
 }
 
-func NewApp(db *gorm.DB, appLogger *zap.Logger) *App {
+func NewAppAppInstance(db *gorm.DB, appLogger *zap.Logger) *AppInstance {
 	appRepos := &AppRepos{
 		ChatRepo:    postgres.NewChatRepoPostgres(db, appLogger),
 		MessageRepo: postgres.NewMessageRepoPostgres(db, appLogger),
@@ -43,7 +43,7 @@ func NewApp(db *gorm.DB, appLogger *zap.Logger) *App {
 		ChatAPI:    httpHandlers.NewChatAPIHTTP(appServices.ChatService, appLogger),
 		MessageAPI: httpHandlers.NewMessageAPIHTTP(appServices.MessageService, appLogger),
 	}
-	return &App{
+	return &AppInstance{
 		Repos:    appRepos,
 		Services: appServices,
 		API:      appAPIs,
