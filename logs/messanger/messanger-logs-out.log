@@ -1,0 +1,24 @@
+2026/01/18 13:37:05 OK   20260117072058_create_chat_tab.sql (4.82ms)
+2026/01/18 13:37:05 OK   20260117115209_create_message_tab.sql (5.81ms)
+2026/01/18 13:37:05 goose: successfully migrated database to version: 20260117115209
+{"level":"info","time":"2026-01-18T13:37:05.634Z","logger":"app","caller":"cmd/main.go:33","msg":"база данных создана ","started":"2026-01-18T13:37:05.634Z"}
+{"level":"info","time":"2026-01-18T13:37:05.634Z","logger":"app","caller":"cmd/main.go:57","msg":"сервер запущен и слушает ","started":"2026-01-18T13:37:05.634Z"}
+{"level":"info","time":"2026-01-18T13:37:10.646Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:15.638Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:20.639Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:25.639Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:30.639Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:35.639Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:40.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:45.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:50.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:37:55.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:00.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:05.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:10.636Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:15.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:20.636Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:25.636Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:30.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:35.637Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
+{"level":"info","time":"2026-01-18T13:38:40.636Z","caller":"app/application.go:77","msg":"метрики","chats_total":0,"messages_total":0}
